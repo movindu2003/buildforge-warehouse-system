@@ -1,69 +1,101 @@
-BuildForge Outbound Warehouse Management System
-📌 Project Overview
+# BuildForge Outbound Warehouse Management System
 
-This project is a web-based Outbound Warehouse Management System developed for BuildForge Construction Equipment (Pvt) Ltd.
+## 📌 Project Overview
 
-The system focuses on managing outbound warehouse operations including:
+This project is a web-based **Outbound Warehouse Management System** developed for **BuildForge Construction Equipment (Pvt) Ltd**.
 
-Equipment inventory management
+The system is designed to manage outbound warehouse operations efficiently, including:
 
-Sales order processing
+- Equipment inventory management  
+- Sales order processing  
+- Order approval and stock reservation  
+- Warehouse dispatch and stock updates  
 
-Order approval and stock reservation
+---
 
-Warehouse dispatch and stock updates
+## 🎯 Objectives
 
-🎯 Objectives
+- Digitize warehouse inventory management  
+- Enable efficient and structured order processing  
+- Prevent stock over-allocation using reservation mechanisms  
+- Improve coordination between departments  
+- Introduce predictive stock shortage alerts  
 
-Digitize warehouse inventory management
+---
 
-Enable efficient order processing
+## 🧩 System Modules
 
-Prevent stock over-allocation using reservation
+### 1️⃣ Equipment & Inventory Management (Store Keeper)
 
-Improve coordination between departments
+- Add, update, and delete equipment  
+- Manage stock quantity and warehouse locations  
+- Handle damaged equipment and stock adjustments  
 
-Introduce predictive stock shortage alerts
+---
 
-🧩 System Modules
-1. Equipment & Inventory Management (Store Keeper)
+### 2️⃣ Sales Order Management (Sales Officer)
 
-Add, update, delete equipment
+- Manage customer details  
+- Create, update, and delete sales orders  
+- View order history  
 
-Manage stock quantity and locations
+---
 
-Handle damaged equipment
+### 3️⃣ Order Approval & Stock Reservation (Sales Manager)
 
-2. Sales Order Management (Sales Officer)
+- Validate stock availability  
+- Approve or reject orders  
+- Reserve stock for confirmed orders  
+- Manage priority-based order queue  
 
-Manage customers
+---
 
-Create, update, delete orders
+### 4️⃣ Warehouse Dispatch & Stock Control (Warehouse Manager)
 
-View order history
+- Manage dispatch operations  
+- Generate invoices and vehicle gate passes  
+- Update stock after dispatch  
+- Maintain stock movement records  
 
-3. Order Approval & Stock Reservation (Sales Manager)
+---
 
-Validate stock availability
+## 🚀 Novel Features
 
-Approve or reject orders
+### 🔹 Priority-Based Order Approval System
+- Orders are assigned priority levels (**High / Medium / Low**)  
+- Sales Manager can process high-priority orders first  
+- Improves decision-making and order handling efficiency  
 
-Reserve stock for confirmed orders
+---
 
-Manage priority-based order queue
+### 🔹 Predictive Stock Shortage Alert
+- Uses historical dispatch data  
+- Calculates average stock usage  
+- Generates alerts when stock is predicted to run low  
+- Helps in proactive production planning  
 
-4. Warehouse Dispatch & Stock Control (Warehouse Manager)
+---
 
-Manage dispatch operations
+## 👥 Team Structure
 
-Generate invoices and gate passes
+- **Store Keeper** – Inventory Management  
+- **Sales Officer** – Order Management  
+- **Sales Manager** – Approval & Reservation (Movindu) 
+- **Warehouse Manager** – Dispatch & Stock Control  
 
-Update stock after dispatch
+---
 
-🚀 Novel Features
+## 📈 Key Benefits
 
-Priority-Based Order Approval System
-Orders are processed based on priority (High / Medium / Low)
+- Real-time stock visibility  
+- Reduced manual errors  
+- Faster order processing  
+- Better inter-department coordination  
+- Data-driven decision making  
 
-Predictive Stock Shortage Alert
-Uses historical dispatch data to predict future stock shortages
+---
+
+
+## 📄 License
+
+This project is developed for academic purposes only.
