@@ -95,7 +95,3 @@ The system is designed to manage outbound warehouse operations efficiently, incl
 
 ---
 
-
-## 📄 License
-
-This project is developed for academic purposes only.
