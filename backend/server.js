@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // Import our routes
 const authRoutes = require('./routes/auth');
+const managerRoutes = require('./routes/manager');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get('/', (req, res) => {
 
 // 🎯 The Auth Route connection (Must be before app.listen)
 app.use('/api/auth', authRoutes);
+app.use('/api/manager', managerRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;

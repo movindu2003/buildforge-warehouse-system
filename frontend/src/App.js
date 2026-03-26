@@ -1,20 +1,61 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './Login';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+// 🧩 Import Components
+import Sidebar from './components/Sidebar';
+
+// 📄 Import Pages
+import Login from './pages/Login'; // 👈 Make sure you still have your Login.js file here!
+import SalesManagerDashboard from './pages/SalesManagerDashboard';
+import OrderHistory from './pages/OrderHistory';
+import CreateOrder from './pages/CreateOrder';
+import Settings from './pages/Settings';
+
+// 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
+function Layout() {
+  const location = useLocation();
+  
+  // Check if the user is currently on the login screen
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/';
+
+  // If they are on the login screen, ONLY show the login routes (No Sidebar!)
+  if (isLoginPage) {
+    return (
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    );
+  }
+
+  // If they are NOT on the login screen, show the Dashboard with the Sidebar!
+  return (
+    <div style={{ display: 'flex' }}>
+      
+      <Sidebar /> {/* ⬅️ Sidebar stays on the left */}
+      
+      <div style={{ marginLeft: '250px', width: '100%', minHeight: '100vh', backgroundColor: '#f4f6f8' }}>
+        <Routes>
+          <Route path="/approval-lobby" element={<SalesManagerDashboard />} />
+          <Route path="/order-history" element={<OrderHistory />} />
+          <Route path="/create-order" element={<CreateOrder />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </div>
+
+    </div>
+  );
+}
+
+// 🚀 MAIN APP COMPONENT
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* The main login page */}
-        <Route path="/" element={<Login />} />
-        
-        {/* The 4 blank "Lobbies" for your team to build later */}
-        <Route path="/inventory" element={<h2>Store Keeper Lobby: Inventory</h2>} />
-        <Route path="/create-order" element={<h2>Sales Officer Lobby: Create Orders</h2>} />
-        <Route path="/approval-lobby" element={<h2>Sales Manager Lobby: Approvals (Movi's Workspace)</h2>} />
-        <Route path="/dispatch" element={<h2>Warehouse Manager Lobby: Dispatch</h2>} />
-      </Routes>
+      <Layout />
+      {/* The Toast speaker stays outside so it works on every page */}
+      <ToastContainer position="bottom-right" autoClose={3000} theme="colored" />
     </Router>
   );
 }
