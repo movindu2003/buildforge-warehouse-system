@@ -130,4 +130,82 @@ router.put('/settings', (req, res) => {
     res.json({ message: "Settings saved!", settings: systemSettings });
 });
 
+router.put('/orders/:id/dispatch', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+    
+    if (order) {
+        order.status = 'Dispatched';
+    
+        order.itemsRequested.forEach(reqItem => {
+            const invItem = inventoryDB.find(i => i.itemName === reqItem.itemName);
+            if (invItem) {
+                invItem.availableQty -= reqItem.qty; 
+                invItem.reservedQty -= reqItem.qty;  
+            }
+        });
+        res.json({ message: "Dispatched!" });
+    }
+});
+
+router.put('/orders/:id/dispatch', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+    if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+    }
+    order.itemsRequested.forEach(requestedItem => {
+     
+        const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
+        if (inventoryItem) {
+          
+            inventoryItem.availableQty -= requestedItem.qty;
+            inventoryItem.reservedQty -= requestedItem.qty;
+        }
+    });
+
+    order.status = 'Dispatched';
+
+    console.log(` Order ${orderId} dispatched. Inventory updated!`);
+    res.json({ message: "Order Dispatched and Inventory Updated Successfully!" });
+});
+
+// manager.js (Backend)
+router.put('/orders/:id/dispatch', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    
+    order.itemsRequested.forEach(requestedItem => {
+        const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
+
+        if (inventoryItem) {
+            inventoryItem.availableQty -= requestedItem.qty;
+
+            inventoryItem.reservedQty -= requestedItem.qty;
+        }
+    });
+    order.status = 'Dispatched';
+
+    res.json({ message: "Dispatched! Inventory updated in Store Keeper's view." });
+});
+
+
+// Add new equipment (Store Keeper logic)
+router.post('/inventory', (req, res) => {
+    const { itemName, availableQty } = req.body;
+    
+    const newEquipment = {
+        _id: Math.random().toString(36).substr(2, 9),
+        itemName,
+        availableQty: Number(availableQty),
+        reservedQty: 0
+    };
+
+    inventoryDB.push(newEquipment);
+    res.json({ message: "Equipment added successfully!", equipment: newEquipment });
+});
+
 module.exports = router;

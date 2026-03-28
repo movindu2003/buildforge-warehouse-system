@@ -20,6 +20,14 @@ function Sidebar() {
     if (role === 'SalesOfficer') {
         menuItems.push({ name: 'Create Order', path: '/create-order', icon: '➕' });
     }
+    
+    if (role === 'WarehouseManager') {
+        menuItems.push({ name: 'Dispatch Orders', path: '/dispatch', icon: '🚚' });
+    }
+
+    if (role === 'StoreKeeper') {
+        menuItems.push({ name: 'Inventory Management', path: '/inventory', icon: '🏪' });
+    }
 
     // common menu item for all roles
     menuItems.push({ name: 'Order History', path: '/order-history', icon: '📜' });

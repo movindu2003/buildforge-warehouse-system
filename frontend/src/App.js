@@ -12,6 +12,8 @@ import SalesManagerDashboard from './pages/SalesManagerDashboard';
 import OrderHistory from './pages/OrderHistory';
 import CreateOrder from './pages/CreateOrder';
 import Settings from './pages/Settings';
+import Dispatch from './pages/Dispatch';
+import StoreKeeperInventory from './pages/Inventory';
 
 // 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
 function Layout() {
@@ -58,6 +60,16 @@ function Layout() {
             <Route path="/create-order" element={<CreateOrder />} />
           )}
 
+          {/* Warehouse Manager routes */}
+          {userRole === 'WarehouseManager' && (
+            <Route path="/dispatch" element={<Dispatch />} />
+          )}
+
+          {/* Store Keeper routes */}
+          {userRole === 'StoreKeeper' && (
+            <Route path="/inventory" element={<StoreKeeperInventory />} />
+          )}
+          
           {/* All users want routes */}
           <Route path="/order-history" element={<OrderHistory />} />
 
