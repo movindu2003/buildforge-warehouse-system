@@ -34,8 +34,7 @@ function CreateOrder() {
         try {
             await axios.post('http://localhost:5001/api/manager/orders', newOrder);
             alert("➕ New Order Successfully Created!");
-            // Instantly send the user back to the dashboard to see their new order!
-            navigate('/approval-lobby'); 
+            
         } catch (error) { 
             console.error("Error creating order:", error); 
         }

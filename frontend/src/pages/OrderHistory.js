@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 function OrderHistory() {
     const [orders, setOrders] = useState([]);
-    const navigate = useNavigate(); // 👈 This is the React tool to change pages
+    const navigate = useNavigate();
+
+    // 🕵️ Get the role from localStorage
+    const userRole = localStorage.getItem('role');
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -18,19 +21,39 @@ function OrderHistory() {
         fetchHistory();
     }, []);
 
-    // Filter only the approved/dispatched orders
+    // 🚦 Smart Back Button Logic
+    const handleBackClick = () => {
+        if (userRole === 'SalesManager') {
+            navigate('/approval-lobby');
+        } else if (userRole === 'SalesOfficer') {
+            navigate('/create-order');
+        } else {
+            navigate('/login'); 
+        }
+    };
+
     const historyOrders = orders.filter(order => 
         order.status === 'Approved (Pending Dispatch)' || order.status === 'Dispatched'
     );
 
     return (
         <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-            {/* 👈 The Back Button */}
+            
+            {/* 👈 Dynamic Back Button */}
             <button 
-                onClick={() => navigate('/approval-lobby')} 
-                style={{ backgroundColor: '#2196F3', color: 'white', padding: '10px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '20px' }}
+                onClick={handleBackClick} 
+                style={{ 
+                    backgroundColor: '#2196F3', 
+                    color: 'white', 
+                    padding: '10px 15px', 
+                    border: 'none', 
+                    borderRadius: '4px', 
+                    cursor: 'pointer', 
+                    marginBottom: '20px',
+                    fontWeight: 'bold'
+                }}
             >
-                ⬅ Back to Dashboard
+                {userRole === 'SalesManager' ? '⬅ Back to Dashboard' : '⬅ Back to Create Order'}
             </button>
 
             <h2 style={{ color: '#607d8b' }}>📜 Full Order History</h2>

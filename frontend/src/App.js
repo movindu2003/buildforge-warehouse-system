@@ -16,7 +16,14 @@ import Settings from './pages/Settings';
 // 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
 function Layout() {
   const location = useLocation();
-  
+  const [userRole, setUserRole] = React.useState(localStorage.getItem('role')); // Retrieve the user's role from localStorage
+
+// check the user role from localStorage whenever the location changes (i.e. when they navigate to a different page) and update the state accordingly. This ensures that if they log out and log in as a different user, the app will show the correct sidebar menu items without needing a full page refresh.
+  React.useEffect(() => {
+    setUserRole(localStorage.getItem('role'));
+  }, [location]);
+
+
   // Check if the user is currently on the login screen
   const isLoginPage = location.pathname === '/login' || location.pathname === '/';
 
@@ -38,13 +45,26 @@ function Layout() {
       
       <div style={{ marginLeft: '250px', width: '100%', minHeight: '100vh', backgroundColor: '#f4f6f8' }}>
         <Routes>
-          <Route path="/approval-lobby" element={<SalesManagerDashboard />} />
+          {/* Managerns  routes */}
+          {userRole === 'SalesManager' && (
+            <>
+              <Route path="/approval-lobby" element={<SalesManagerDashboard />} />
+              <Route path="/settings" element={<Settings />} />
+            </>
+          )}
+
+          {/*  Sales Officer routes */}
+          {userRole === 'SalesOfficer' && (
+            <Route path="/create-order" element={<CreateOrder />} />
+          )}
+
+          {/* All users want routes */}
           <Route path="/order-history" element={<OrderHistory />} />
-          <Route path="/create-order" element={<CreateOrder />} />
-          <Route path="/settings" element={<Settings />} />
+
+          {/*user not asssign the role*/}
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>
-
     </div>
   );
 }
