@@ -21,9 +21,10 @@ function Layout() {
   const [userRole, setUserRole] = React.useState(localStorage.getItem('role')); // Retrieve the user's role from localStorage
 
 // check the user role from localStorage whenever the location changes (i.e. when they navigate to a different page) and update the state accordingly. This ensures that if they log out and log in as a different user, the app will show the correct sidebar menu items without needing a full page refresh.
-  React.useEffect(() => {
-    setUserRole(localStorage.getItem('role'));
-  }, [location]);
+     React.useEffect(() => {
+      const role = localStorage.getItem('role');
+      setUserRole(role);
+    }, [location]);
 
 
   // Check if the user is currently on the login screen
@@ -37,6 +38,10 @@ function Layout() {
         <Route path="/login" element={<Login />} />
       </Routes>
     );
+  }
+
+  if (!userRole && !isLoginPage) {
+    return <Navigate to="/login" />;
   }
 
   // If they are NOT on the login screen, show the Dashboard with the Sidebar!
@@ -69,12 +74,17 @@ function Layout() {
           {userRole === 'StoreKeeper' && (
             <Route path="/inventory" element={<StoreKeeperInventory />} />
           )}
-          
+
           {/* All users want routes */}
           <Route path="/order-history" element={<OrderHistory />} />
 
-          {/*user not asssign the role*/}
-          <Route path="*" element={<Navigate to="/login" />} />
+          {/* 3. Catch-all route */}
+          <Route path="*" element={<Navigate to={
+            userRole === 'SalesManager' ? "/approval-lobby" : 
+            userRole === 'SalesOfficer' ? "/create-order" : 
+            userRole === 'StoreKeeper' ? "/inventory" : 
+            userRole === 'WarehouseManager' ? "/dispatch" : "/login"
+          } />} />
         </Routes>
       </div>
     </div>
