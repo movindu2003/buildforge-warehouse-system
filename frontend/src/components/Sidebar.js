@@ -22,11 +22,16 @@ function Sidebar() {
     }
     
     if (role === 'WarehouseManager') {
-        menuItems.push({ name: 'Dispatch Orders', path: '/dispatch', icon: '🚚' });
+        menuItems.push({ name: 'Dispatch Center', path: '/dispatch', icon: '🚚' });
+        menuItems.push({ name: 'Pick List', path: '/picklist', icon: '📋' });
+        menuItems.push({ name: 'Gate Pass', path: '/gatepass', icon: '🚪' });
+        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: '📊' });
+        menuItems.push({ name: 'Damage Report', path: '/damage-report', icon: '⚠️' });
     }
 
     if (role === 'StoreKeeper') {
         menuItems.push({ name: 'Inventory Management', path: '/inventory', icon: '🏪' });
+        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: '📊' });
     }
 
     // common menu item for all roles

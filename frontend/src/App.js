@@ -7,12 +7,16 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './components/Sidebar';
 
 // 📄 Import Pages
-import Login from './pages/Login'; // 👈 Make sure you still have your Login.js file here!
+import Login from './pages/Login';
 import SalesManagerDashboard from './pages/SalesManagerDashboard';
 import OrderHistory from './pages/OrderHistory';
 import CreateOrder from './pages/CreateOrder';
 import Settings from './pages/Settings';
 import Dispatch from './pages/Dispatch';
+import PickList from './pages/PickList';
+import GatePass from './pages/GatePass';
+import StockMovementHistory from './pages/StockMovementHistory';
+import DamageReport from './pages/DamageReport';
 import StoreKeeperInventory from './pages/Inventory';
 
 // 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
@@ -67,12 +71,21 @@ function Layout() {
 
           {/* Warehouse Manager routes */}
           {userRole === 'WarehouseManager' && (
-            <Route path="/dispatch" element={<Dispatch />} />
+            <>
+              <Route path="/dispatch" element={<Dispatch />} />
+              <Route path="/picklist" element={<PickList />} />
+              <Route path="/gatepass" element={<GatePass />} />
+              <Route path="/stock-movements" element={<StockMovementHistory />} />
+              <Route path="/damage-report" element={<DamageReport />} />
+            </>
           )}
 
           {/* Store Keeper routes */}
           {userRole === 'StoreKeeper' && (
-            <Route path="/inventory" element={<StoreKeeperInventory />} />
+            <>
+              <Route path="/inventory" element={<StoreKeeperInventory />} />
+              <Route path="/stock-movements" element={<StockMovementHistory />} />
+            </>
           )}
 
           {/* All users want routes */}

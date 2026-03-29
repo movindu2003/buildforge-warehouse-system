@@ -1,22 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer'); 
-const twilio = require('twilio'); // 👈 1. Import Twilio
+const twilio = require('twilio');
 
 // 📧 EMAIL SETUP
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'buildforge.operations@gmail.com',      // Keep your Gmail here
-        pass: 'hhamtbwzfqspuonb'  // Keep your App Password here
+        user: 'buildforge.operations@gmail.com',
+        pass: 'hhamtbwzfqspuonb'
     }
 });
 
-// 📱 2. TWILIO SMS SETUP (Paste your Twilio details here!)
+// 📱 TWILIO SMS SETUP
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
 const twilioClient = new twilio(accountSid, authToken);
 
 let inventoryDB = [
@@ -32,9 +31,11 @@ let ordersDB = [
         priority: 'High',
         status: 'Pending',
         itemsRequested: [
-            { _id: 'a1', itemName: 'Concrete Mixer', qty: 10 }, 
-            { _id: 'a2', itemName: 'Steel Scaffolding', qty: 10 }
-        ]
+            { _id: 'a1', itemName: 'Concrete Mixer', qty: 10, pickedQty: 0 }, 
+            { _id: 'a2', itemName: 'Steel Scaffolding', qty: 10, pickedQty: 0 }
+        ],
+        stockMovements: [],
+        damageReports: []
     },
     {
         _id: '102',
@@ -42,8 +43,10 @@ let ordersDB = [
         priority: 'Normal',
         status: 'Pending',
         itemsRequested: [
-            { _id: 'b1', itemName: 'Jackhammer', qty: 3 }
-        ]
+            { _id: 'b1', itemName: 'Jackhammer', qty: 3, pickedQty: 0 }
+        ],
+        stockMovements: [],
+        damageReports: []
     }
 ];
 
@@ -52,22 +55,279 @@ let systemSettings = {
     operationsPhone: '+94770000000'                     
 };
 
+// ========== INVENTORY ROUTES ==========
 router.get('/inventory', (req, res) => res.json(inventoryDB));
+
+router.post('/inventory', (req, res) => {
+    const { itemName, availableQty } = req.body;
+    const newEquipment = {
+        _id: Math.random().toString(36).substr(2, 9),
+        itemName,
+        availableQty: Number(availableQty),
+        reservedQty: 0
+    };
+    inventoryDB.push(newEquipment);
+    res.json({ message: "Equipment added successfully!", equipment: newEquipment });
+});
+
+// ========== ORDER ROUTES ==========
 router.get('/orders', (req, res) => res.json(ordersDB));
 
+router.post('/orders', (req, res) => {
+    const newOrder = {
+        _id: Math.random().toString(36).substr(2, 9), 
+        customerName: req.body.customerName,
+        priority: req.body.priority,
+        status: 'Pending',
+        itemsRequested: [{ itemName: req.body.equipmentName, qty: Number(req.body.qty), pickedQty: 0 }],
+        stockMovements: [],
+        damageReports: []
+    };
+    ordersDB.push(newOrder); 
+    res.json({ message: "Order created successfully!", order: newOrder });
+});
+
+router.delete('/orders/:id', (req, res) => {
+    ordersDB = ordersDB.filter(order => order._id !== req.params.id);
+    res.json({ message: "Order cancelled and deleted!" });
+});
+
+// ========== APPROVAL ROUTE ==========
 router.put('/orders/:id/approve', (req, res) => {
     const orderId = req.params.id;
     const order = ordersDB.find(o => o._id === orderId);
     if (!order) return res.status(404).json({ error: "Order not found" });
+    
     order.status = 'Approved (Pending Dispatch)';
     order.itemsRequested.forEach(requestedItem => {
         const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
-        if (inventoryItem) inventoryItem.reservedQty += requestedItem.qty; 
+        if (inventoryItem) inventoryItem.reservedQty += requestedItem.qty;
+        
+        // Log stock movement
+        order.stockMovements.push({
+            timestamp: new Date(),
+            itemName: requestedItem.itemName,
+            qty: requestedItem.qty,
+            action: 'Reserved',
+            notes: 'Order approved and stock reserved'
+        });
     });
-    res.json({ message: "Order Approved Successfully!" });
+    res.json({ message: "Order Approved Successfully!", order });
 });
 
-// 🏭 3. THE BACKORDER LOGIC (Now sends Email AND SMS!)
+// ========== PICKING WORKFLOW ==========
+// Generate Pick List
+router.post('/orders/:id/generate-picklist', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+    
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (order.status !== 'Approved (Pending Dispatch)') {
+        return res.status(400).json({ error: "Order must be approved before picking" });
+    }
+    
+    order.status = 'Picking';
+    order.pickingStartedAt = new Date();
+    
+    const pickList = {
+        pickListId: 'PL-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        orderId: order._id,
+        customerName: order.customerName,
+        items: order.itemsRequested.map(item => ({
+            itemName: item.itemName,
+            requiredQty: item.qty,
+            pickedQty: 0
+        })),
+        createdAt: new Date()
+    };
+    
+    res.json({ 
+        message: "Pick List generated successfully!", 
+        pickList,
+        order 
+    });
+});
+
+// Confirm Pick for an item
+router.put('/orders/:id/confirm-pick', (req, res) => {
+    const orderId = req.params.id;
+    const { itemName, pickedQty, warehouseStaff } = req.body;
+    
+    const order = ordersDB.find(o => o._id === orderId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    
+    const item = order.itemsRequested.find(i => i.itemName === itemName);
+    if (!item) return res.status(404).json({ error: "Item not found in order" });
+    
+    item.pickedQty += pickedQty;
+    
+    order.stockMovements.push({
+        timestamp: new Date(),
+        itemName: itemName,
+        qty: pickedQty,
+        action: 'Picked',
+        notes: `Picked by ${warehouseStaff}`
+    });
+    
+    // Check if all items are picked
+    const allPicked = order.itemsRequested.every(i => i.pickedQty >= i.qty);
+    if (allPicked) {
+        order.status = 'Ready for Gate Pass';
+        order.pickingCompletedAt = new Date();
+        order.pickedBy = warehouseStaff;
+    }
+    
+    res.json({ message: "Item picked successfully!", order });
+});
+
+// ========== GATE PASS GENERATION ==========
+router.post('/orders/:id/generate-gatepass', (req, res) => {
+    const orderId = req.params.id;
+    const { driverName, dispatchLocation, vehicleNumber, vehicleType } = req.body;
+    const order = ordersDB.find(o => o._id === orderId);
+    
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (order.status !== 'Ready for Gate Pass') {
+        return res.status(400).json({ error: "All items must be picked before generating gate pass" });
+    }
+    
+    const gatePassNumber = 'GP-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    order.gatePassNumber = gatePassNumber;
+    order.generatedAt = new Date();
+    order.driverName = driverName || order.driverName || '';
+    order.dispatchLocation = dispatchLocation || order.dispatchLocation || '';
+    order.vehicleNumber = vehicleNumber || order.vehicleNumber || '';
+    order.vehicleType = vehicleType || order.vehicleType || '';
+
+    const gatePass = {
+        gatePassNumber,
+        orderId: order._id,
+        customerName: order.customerName,
+        items: order.itemsRequested.map(item => ({
+            itemName: item.itemName,
+            qty: item.pickedQty
+        })),
+        pickedBy: order.pickedBy,
+        driverName: order.driverName,
+        vehicleNumber: order.vehicleNumber,
+        vehicleType: order.vehicleType,
+        dispatchLocation: order.dispatchLocation,
+        generatedAt: new Date()
+    };
+    
+    res.json({ 
+        message: "Gate Pass generated successfully!", 
+        gatePass,
+        order 
+    });
+});
+
+// ========== DISPATCH ROUTE (Updated) ==========
+router.put('/orders/:id/dispatch', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (order.status !== 'Ready for Gate Pass' && order.status !== 'Approved (Pending Dispatch)') {
+        return res.status(400).json({ error: "Order not ready for dispatch" });
+    }
+
+    order.status = 'Dispatched';
+
+    // Update inventory
+    order.itemsRequested.forEach(requestedItem => {
+        const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
+        if (inventoryItem) {
+            const dispatchQty = requestedItem.pickedQty > 0 ? requestedItem.pickedQty : requestedItem.qty;
+            inventoryItem.availableQty -= dispatchQty;
+            inventoryItem.reservedQty -= dispatchQty;
+        }
+
+        order.stockMovements.push({
+            timestamp: new Date(),
+            itemName: requestedItem.itemName,
+            qty: requestedItem.pickedQty > 0 ? requestedItem.pickedQty : requestedItem.qty,
+            action: 'Dispatched',
+            notes: `Dispatched (GatePass info: driver ${order.driverName || 'N/A'}, vehicle ${order.vehicleType || 'N/A'} ${order.vehicleNumber || 'N/A'}, location ${order.dispatchLocation || 'N/A'})`
+        });
+    });
+
+    res.json({ message: "Order Dispatched! Inventory updated.", order });
+});
+
+// ========== DAMAGE REPORT ==========
+router.post('/orders/:id/damage-report', (req, res) => {
+    const orderId = req.params.id;
+    const { itemName, qty, reason, reportedBy } = req.body;
+    
+    const order = ordersDB.find(o => o._id === orderId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    
+    const item = order.itemsRequested.find(i => i.itemName === itemName);
+    if (!item) return res.status(404).json({ error: "Item not found in order" });
+    
+    // Reduce picked quantity
+    item.pickedQty -= qty;
+    
+    // Add damage report
+    order.damageReports.push({
+        timestamp: new Date(),
+        itemName,
+        qty,
+        reason,
+        reportedBy
+    });
+    
+    // Log stock movement
+    order.stockMovements.push({
+        timestamp: new Date(),
+        itemName,
+        qty,
+        action: 'Damaged',
+        notes: `Damage reported: ${reason}`
+    });
+    
+    // Update inventory (return to available)
+    const inventoryItem = inventoryDB.find(inv => inv.itemName === itemName);
+    if (inventoryItem) {
+        inventoryItem.availableQty += qty;
+        inventoryItem.reservedQty -= qty;
+    }
+    
+    res.json({ message: "Damage report recorded!", order });
+});
+
+// ========== STOCK MOVEMENT HISTORY ==========
+router.get('/orders/:id/stock-movements', (req, res) => {
+    const orderId = req.params.id;
+    const order = ordersDB.find(o => o._id === orderId);
+    
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    
+    res.json({
+        orderId: order._id,
+        customerName: order.customerName,
+        stockMovements: order.stockMovements,
+        damageReports: order.damageReports
+    });
+});
+
+// Get all stock movements across all orders
+router.get('/stock-movements', (req, res) => {
+    const allMovements = [];
+    ordersDB.forEach(order => {
+        order.stockMovements.forEach(movement => {
+            allMovements.push({
+                orderId: order._id,
+                customerName: order.customerName,
+                ...movement
+            });
+        });
+    });
+    res.json(allMovements.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+});
+
+// ========== BACKORDERING ==========
 router.put('/orders/:id/backorder', async (req, res) => { 
     const orderId = req.params.id;
     const order = ordersDB.find(o => o._id === orderId);
@@ -75,7 +335,6 @@ router.put('/orders/:id/backorder', async (req, res) => {
     
     order.status = 'Backordered';
 
-    // Draft the Email
     let equipmentList = order.itemsRequested.map(item => `- ${item.qty}x ${item.itemName}`).join('\n');
     const mailOptions = {
         from: 'BuildForge System',
@@ -85,15 +344,13 @@ router.put('/orders/:id/backorder', async (req, res) => {
     };
 
     try {
-        // 🚀 Send Email
         await transporter.sendMail(mailOptions);
         console.log("Email sent successfully!");
 
-        // 🚀 Send SMS
         const smsMessage = await twilioClient.messages.create({
             body: `🏗️ BuildForge Alert: Urgent stock shortage for ${order.customerName}. Please check your email for the manufacturing request.`,
-            from: twilioPhoneNumber,             // Must be your Twilio Number
-            to: systemSettings.operationsPhone   // Pulls your Sri Lankan number from Settings!
+            from: twilioPhoneNumber,
+            to: systemSettings.operationsPhone
         });
         console.log("SMS sent successfully! SID:", smsMessage.sid);
 
@@ -104,108 +361,13 @@ router.put('/orders/:id/backorder', async (req, res) => {
     }
 });
 
-router.post('/orders', (req, res) => {
-    const newOrder = {
-        _id: Math.random().toString(36).substr(2, 9), 
-        customerName: req.body.customerName,
-        priority: req.body.priority,
-        status: 'Pending',
-        itemsRequested: [{ itemName: req.body.equipmentName, qty: Number(req.body.qty) }]
-    };
-    ordersDB.push(newOrder); 
-    res.json({ message: "Order created successfully!", order: newOrder });
-});
-
-router.delete('/orders/:id', (req, res) => {
-    const orderId = req.params.id;
-    ordersDB = ordersDB.filter(order => order._id !== orderId);
-    res.json({ message: "Order cancelled and deleted!" });
-});
-
+// ========== SETTINGS ==========
 router.get('/settings', (req, res) => res.json(systemSettings));
 
 router.put('/settings', (req, res) => {
     systemSettings.operationsEmail = req.body.operationsEmail;
     systemSettings.operationsPhone = req.body.operationsPhone;
     res.json({ message: "Settings saved!", settings: systemSettings });
-});
-
-router.put('/orders/:id/dispatch', (req, res) => {
-    const orderId = req.params.id;
-    const order = ordersDB.find(o => o._id === orderId);
-    
-    if (order) {
-        order.status = 'Dispatched';
-    
-        order.itemsRequested.forEach(reqItem => {
-            const invItem = inventoryDB.find(i => i.itemName === reqItem.itemName);
-            if (invItem) {
-                invItem.availableQty -= reqItem.qty; 
-                invItem.reservedQty -= reqItem.qty;  
-            }
-        });
-        res.json({ message: "Dispatched!" });
-    }
-});
-
-router.put('/orders/:id/dispatch', (req, res) => {
-    const orderId = req.params.id;
-    const order = ordersDB.find(o => o._id === orderId);
-    if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-    }
-    order.itemsRequested.forEach(requestedItem => {
-     
-        const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
-        if (inventoryItem) {
-          
-            inventoryItem.availableQty -= requestedItem.qty;
-            inventoryItem.reservedQty -= requestedItem.qty;
-        }
-    });
-
-    order.status = 'Dispatched';
-
-    console.log(` Order ${orderId} dispatched. Inventory updated!`);
-    res.json({ message: "Order Dispatched and Inventory Updated Successfully!" });
-});
-
-// manager.js (Backend)
-router.put('/orders/:id/dispatch', (req, res) => {
-    const orderId = req.params.id;
-    const order = ordersDB.find(o => o._id === orderId);
-
-    if (!order) return res.status(404).json({ error: "Order not found" });
-
-    
-    order.itemsRequested.forEach(requestedItem => {
-        const inventoryItem = inventoryDB.find(inv => inv.itemName === requestedItem.itemName);
-
-        if (inventoryItem) {
-            inventoryItem.availableQty -= requestedItem.qty;
-
-            inventoryItem.reservedQty -= requestedItem.qty;
-        }
-    });
-    order.status = 'Dispatched';
-
-    res.json({ message: "Dispatched! Inventory updated in Store Keeper's view." });
-});
-
-
-// Add new equipment (Store Keeper logic)
-router.post('/inventory', (req, res) => {
-    const { itemName, availableQty } = req.body;
-    
-    const newEquipment = {
-        _id: Math.random().toString(36).substr(2, 9),
-        itemName,
-        availableQty: Number(availableQty),
-        reservedQty: 0
-    };
-
-    inventoryDB.push(newEquipment);
-    res.json({ message: "Equipment added successfully!", equipment: newEquipment });
 });
 
 module.exports = router;
