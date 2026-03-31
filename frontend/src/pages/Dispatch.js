@@ -37,7 +37,7 @@ function Dispatch() {
     const getFilteredOrders = () => {
         switch (filter) {
             case 'pending':
-                return orders.filter(o => o.status === 'Approved (Pending Dispatch)');
+                return orders.filter(o => o.status === 'Approved');
             case 'picking':
                 return orders.filter(o => o.status === 'Picking');
             case 'gatepass':
@@ -46,7 +46,7 @@ function Dispatch() {
                 return orders.filter(o => o.status === 'Dispatched');
             default:
                 return orders.filter(o => 
-                    o.status === 'Approved (Pending Dispatch)' || 
+                    o.status === 'Approved' || 
                     o.status === 'Picking' || 
                     o.status === 'Ready for Gate Pass' ||
                     o.status === 'Dispatched'
@@ -58,7 +58,7 @@ function Dispatch() {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Approved (Pending Dispatch)':
+            case 'Approved':
                 return '#3498db';
             case 'Picking':
                 return '#f39c12';
@@ -73,7 +73,7 @@ function Dispatch() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'Approved (Pending Dispatch)':
+            case 'Approved':
                 return '📋';
             case 'Picking':
                 return '📦';
@@ -105,7 +105,7 @@ function Dispatch() {
                         fontWeight: filter === 'all' ? 'bold' : 'normal'
                     }}
                 >
-                    All Orders ({orders.filter(o => ['Approved (Pending Dispatch)', 'Picking', 'Ready for Gate Pass', 'Dispatched'].includes(o.status)).length})
+                    All Orders ({orders.filter(o => ['Approved', 'Picking', 'Ready for Gate Pass', 'Dispatched'].includes(o.status)).length})
                 </button>
                 <button
                     onClick={() => setFilter('pending')}
@@ -119,7 +119,7 @@ function Dispatch() {
                         fontWeight: filter === 'pending' ? 'bold' : 'normal'
                     }}
                 >
-                    📋 Pending ({orders.filter(o => o.status === 'Approved (Pending Dispatch)').length})
+                    📋 Pending ({orders.filter(o => o.status === 'Approved').length})
                 </button>
                 <button
                     onClick={() => setFilter('picking')}
@@ -233,7 +233,7 @@ function Dispatch() {
                                             Dispatch
                                         </button>
                                     )}
-                                    {order.status === 'Approved (Pending Dispatch)' && (
+                                    {order.status === 'Approved' && (
                                         <span style={{ color: '#3498db', fontSize: '12px' }}>Go to Pick List →</span>
                                     )}
                                     {order.status === 'Picking' && (

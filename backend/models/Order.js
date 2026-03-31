@@ -8,9 +8,10 @@ const orderSchema = new mongoose.Schema({
         qty: Number,
         pickedQty: { type: Number, default: 0 }
     }],
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Dispatched', 'Picking', 'Ready for Gate Pass'], default: 'Pending' },
-    priority: { type: String, enum: ['Low', 'Normal', 'High'], default: 'Normal' },
-    driverName: String,
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Dispatched', 'Picking', 'Ready for Gate Pass', 'Backordered', 'Cancelled'], default: 'Pending' },    driverName: String,
+    cancellationCategory: String,
+    cancellationReason: String,
+    cancelledAt: Date,
     vehicleNumber: String,
     vehicleType: String,
     dispatchLocation: String,

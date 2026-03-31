@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './components/Sidebar';
 
 // 📄 Import Pages
+import HomePage from './pages/HomePage'; // 👈 1. IMPORT YOUR NEW HOME PAGE
 import Login from './pages/Login';
 import SalesManagerDashboard from './pages/SalesManagerDashboard';
 import OrderHistory from './pages/OrderHistory';
@@ -19,36 +20,35 @@ import StockMovementHistory from './pages/StockMovementHistory';
 import DamageReport from './pages/DamageReport';
 import StoreKeeperInventory from './pages/Inventory';
 
+
 // 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
 function Layout() {
   const location = useLocation();
-  const [userRole, setUserRole] = React.useState(localStorage.getItem('role')); // Retrieve the user's role from localStorage
+  const [userRole, setUserRole] = React.useState(localStorage.getItem('role'));
 
-// check the user role from localStorage whenever the location changes (i.e. when they navigate to a different page) and update the state accordingly. This ensures that if they log out and log in as a different user, the app will show the correct sidebar menu items without needing a full page refresh.
-     React.useEffect(() => {
-      const role = localStorage.getItem('role');
-      setUserRole(role);
-    }, [location]);
+  React.useEffect(() => {
+    const role = localStorage.getItem('role');
+    setUserRole(role);
+  }, [location]);
 
+  // 👈 2. RENAME TO 'isPublicPage' so it applies to BOTH Home and Login
+  const isPublicPage = location.pathname === '/login' || location.pathname === '/';
 
-  // Check if the user is currently on the login screen
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/';
-
-  // If they are on the login screen, ONLY show the login routes (No Sidebar!)
-  if (isLoginPage) {
+  // If they are on a public page, ONLY show those routes (No Sidebar!)
+  if (isPublicPage) {
     return (
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<HomePage />} /> {/* 👈 3. SET ROOT PATH TO HOMEPAGE */}
         <Route path="/login" element={<Login />} />
       </Routes>
     );
   }
 
-  if (!userRole && !isLoginPage) {
+  if (!userRole && !isPublicPage) {
     return <Navigate to="/login" />;
   }
 
-  // If they are NOT on the login screen, show the Dashboard with the Sidebar!
+  // If they are NOT on a public page, show the Dashboard with the Sidebar!
   return (
     <div style={{ display: 'flex' }}>
       
@@ -56,7 +56,7 @@ function Layout() {
       
       <div style={{ marginLeft: '250px', width: '100%', minHeight: '100vh', backgroundColor: '#f4f6f8' }}>
         <Routes>
-          {/* Managerns  routes */}
+          {/* Manager routes */}
           {userRole === 'SalesManager' && (
             <>
               <Route path="/approval-lobby" element={<SalesManagerDashboard />} />
@@ -64,7 +64,7 @@ function Layout() {
             </>
           )}
 
-          {/*  Sales Officer routes */}
+          {/* Sales Officer routes */}
           {userRole === 'SalesOfficer' && (
             <Route path="/create-order" element={<CreateOrder />} />
           )}
@@ -91,7 +91,7 @@ function Layout() {
           {/* All users want routes */}
           <Route path="/order-history" element={<OrderHistory />} />
 
-          {/* 3. Catch-all route */}
+          {/* Catch-all route */}
           <Route path="*" element={<Navigate to={
             userRole === 'SalesManager' ? "/approval-lobby" : 
             userRole === 'SalesOfficer' ? "/create-order" : 

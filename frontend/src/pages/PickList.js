@@ -12,7 +12,7 @@ function PickList() {
     const fetchApprovedOrders = async () => {
         try {
             const res = await axios.get('http://localhost:5001/api/manager/orders');
-            const approved = res.data.filter(o => o.status === 'Approved (Pending Dispatch)');
+            const approved = res.data.filter(o => o.status === 'Approved');
             setOrders(approved);
         } catch (error) {
             console.error(error);

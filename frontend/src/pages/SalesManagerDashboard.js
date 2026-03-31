@@ -5,9 +5,12 @@ import { toast } from 'react-toastify';
 function SalesManagerDashboard() {
     const [orders, setOrders] = useState([]);
     const [inventory, setInventory] = useState([]);
-    
-    // 🔍 NEW STATE FOR OUR LIVE SEARCH
     const [searchQuery, setSearchQuery] = useState('');
+    
+    // 🛑 NEW STATE FOR CANCELLATION POPUP
+    const [cancelCategory, setCancelCategory] = useState('');
+    const [customReason, setCustomReason] = useState('');
+    const [cancellingOrderId, setCancellingOrderId] = useState(null); 
     
     const username = localStorage.getItem('username');
 
@@ -43,15 +46,41 @@ function SalesManagerDashboard() {
         }
     };
 
-    const handleCancelOrder = async (orderId) => {
-        const confirmDelete = window.confirm("❌ Are you sure you want to permanently cancel this order?");
-        if (confirmDelete) {
-            try {
-                await axios.delete(`http://localhost:5001/api/manager/orders/${orderId}`);
-                toast.error("🗑️ Order permanently cancelled."); 
-                fetchDashboardData();
-            } catch (error) { console.error("Error deleting order:", error); }
+    // 🛑 THE UPGRADED CANCEL FUNCTION
+    const handleConfirmCancel = async () => {
+        // Validation: Don't let them submit if it's empty
+        if (!cancelCategory) {
+            return toast.warning("Please select a cancellation reason.");
         }
+        if (cancelCategory === 'Other' && customReason.trim() === '') {
+            return toast.warning("Please type the custom reason in the text box.");
+        }
+
+        try {
+            await axios.put(`http://localhost:5001/api/manager/orders/${cancellingOrderId}/cancel`, {
+                cancellationCategory: cancelCategory, 
+                cancellationReason: cancelCategory === 'Other' ? customReason : 'Standard cancellation'
+            });
+            
+            toast.info("🛑 Order securely moved to Cancellation History.");
+            
+            // Reset the form, close the popup, and refresh the table
+            setCancelCategory('');
+            setCustomReason('');
+            setCancellingOrderId(null); 
+            fetchDashboardData(); 
+            
+        } catch (error) {
+            console.error("Error cancelling:", error);
+            toast.error("Failed to cancel order.");
+        }
+    };
+
+    // Helper to close the popup without saving
+    const closeCancelPopup = () => {
+        setCancellingOrderId(null);
+        setCancelCategory('');
+        setCustomReason('');
     };
 
     const canFulfillOrder = (order) => {
@@ -63,13 +92,9 @@ function SalesManagerDashboard() {
     };
 
     // --- ✂️ FILTERING LOGIC ---
-    
-    // 1. First, split the orders by status
     const pendingOrders = orders.filter(order => order.status === 'Pending');
     const backorderedOrders = orders.filter(order => order.status === 'Backordered');
 
-    // 2. 🔍 Then, apply the LIVE SEARCH filter based on what you typed!
-    // It converts both to lowercase so searching "skyline" still finds "Skyline"
     const searchedPendingOrders = pendingOrders.filter(order => 
         order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -77,13 +102,12 @@ function SalesManagerDashboard() {
         order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // KPI Math
     const totalAvailableItems = inventory.reduce((total, item) => total + (item.availableQty - item.reservedQty), 0);
     const pendingCount = pendingOrders.length;
     const backorderCount = backorderedOrders.length;
 
     return (
-        <div style={{ padding: '30px', fontFamily: 'Arial, sans-serif', paddingBottom: '100px' }}>
+        <div style={{ padding: '30px', fontFamily: 'Arial, sans-serif', paddingBottom: '100px', position: 'relative' }}>
             
             <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ margin: '0 0 10px 0', color: '#263238' }}>🚀 Sales Manager Dashboard</h2>
@@ -124,10 +148,8 @@ function SalesManagerDashboard() {
                 </tbody>
             </table>
 
-            {/* 🔍 THE NEW SEARCH BAR LAYOUT */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ color: '#37474f', margin: 0 }}>📝 New Pending Orders</h3>
-                
                 <input 
                     type="text" 
                     placeholder="🔍 Search by Customer Name..." 
@@ -150,7 +172,6 @@ function SalesManagerDashboard() {
                     <tr><th>Customer</th><th>Priority</th><th>Items Requested</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
-                    {/* 👈 Notice we are mapping over 'searchedPendingOrders' now! */}
                     {searchedPendingOrders.length === 0 ? <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#78909c' }}>No matching pending orders found.</td></tr> : searchedPendingOrders.map((order) => (
                         <tr key={order._id} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ fontWeight: '500' }}>{order.customerName}</td>
@@ -162,7 +183,8 @@ function SalesManagerDashboard() {
                                 ) : (
                                     <button onClick={() => handleBackorder(order._id)} style={{ backgroundColor: '#ff9800', color: 'white', padding: '8px 12px', marginRight: '5px', border: 'none', cursor: 'pointer', borderRadius: '4px', transition: '0.2s' }}>Backorder</button>
                                 )}
-                                <button onClick={() => handleCancelOrder(order._id)} style={{ backgroundColor: '#f44336', color: 'white', padding: '8px 12px', border: 'none', cursor: 'pointer', borderRadius: '4px', transition: '0.2s' }}>Cancel</button>
+                                {/* 🛑 Trigger the Popup instead of instant delete */}
+                                <button onClick={() => setCancellingOrderId(order._id)} style={{ backgroundColor: '#f44336', color: 'white', padding: '8px 12px', border: 'none', cursor: 'pointer', borderRadius: '4px', transition: '0.2s' }}>Cancel</button>
                             </td>
                         </tr>
                     ))}
@@ -175,7 +197,6 @@ function SalesManagerDashboard() {
                     <tr><th>Customer</th><th>Priority</th><th>Items Requested</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
-                    {/* 👈 Notice we are mapping over 'searchedBackorderedOrders' now! */}
                     {searchedBackorderedOrders.length === 0 ? <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#78909c' }}>No matching backorders found.</td></tr> : searchedBackorderedOrders.map((order) => (
                         <tr key={order._id} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ fontWeight: '500' }}>{order.customerName}</td>
@@ -187,12 +208,59 @@ function SalesManagerDashboard() {
                                 ) : (
                                     <span style={{ color: '#9e9e9e', fontStyle: 'italic', marginRight: '10px' }}>Waiting...</span>
                                 )}
-                                <button onClick={() => handleCancelOrder(order._id)} style={{ backgroundColor: '#f44336', color: 'white', padding: '8px 12px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>Cancel</button>
+                                {/* 🛑 Trigger the Popup instead of instant delete */}
+                                <button onClick={() => setCancellingOrderId(order._id)} style={{ backgroundColor: '#f44336', color: 'white', padding: '8px 12px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>Cancel</button>
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+
+            {/* 🛑 THE CANCELLATION POPUP MODAL */}
+            {cancellingOrderId && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '450px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
+                        <h3 style={{ marginTop: 0, color: '#c0392b' }}>🛑 Cancel Order</h3>
+                        <p style={{ color: '#7f8c8d', fontSize: '14px' }}>Please specify the reason for cancelling this order. This action will log the order in the Cancellation History.</p>
+                        
+                        <label style={{ fontWeight: 'bold', display: 'block', marginTop: '15px' }}>Reason for Cancellation:</label>
+                        <select 
+                            value={cancelCategory} 
+                            onChange={(e) => {
+                                setCancelCategory(e.target.value);
+                                setCustomReason(''); 
+                            }}
+                            style={{ width: '100%', padding: '10px', marginBottom: '15px', marginTop: '5px', borderRadius: '4px', border: '1px solid #bdc3c7' }}
+                        >
+                            <option value="">-- Select a Category --</option>
+                            <option value="Customer Requested Cancellation">Customer Requested Cancellation</option>
+                            <option value="Duplicate Order">Duplicate Order</option>
+                            <option value="Stock Discontinued / Unavailable">Stock Discontinued / Unavailable</option>
+                            <option value="Payment / Credit Issue">Payment / Credit Issue</option>
+                            <option value="Alternative Equipment Selected">Alternative Equipment Selected</option>
+                            <option value="Other">Other (Please specify)</option>
+                        </select>
+
+                        {cancelCategory === 'Other' && (
+                            <div>
+                                <label style={{ fontSize: '13px', color: '#e74c3c', fontWeight: 'bold' }}>Please specify the reason:</label>
+                                <textarea 
+                                    value={customReason}
+                                    onChange={(e) => setCustomReason(e.target.value)}
+                                    placeholder="Type the exact reason here..."
+                                    rows="3"
+                                    style={{ width: '100%', padding: '10px', marginTop: '5px', border: '1px solid #e74c3c', borderRadius: '4px' }}
+                                />
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '25px' }}>
+                            <button onClick={closeCancelPopup} style={{ padding: '8px 15px', border: 'none', backgroundColor: '#95a5a6', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Go Back</button>
+                            <button onClick={handleConfirmCancel} style={{ padding: '8px 15px', border: 'none', backgroundColor: '#e74c3c', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Confirm Cancellation</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

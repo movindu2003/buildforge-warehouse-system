@@ -32,8 +32,11 @@ function OrderHistory() {
         }
     };
 
+    // 🚦 Grab EVERY order that has moved past the 'Pending' stage
     const historyOrders = orders.filter(order => 
-        order.status === 'Approved (Pending Dispatch)' || order.status === 'Dispatched'
+        order.status !== 'Pending' && 
+        order.status !== 'Backordered' && 
+        order.status !== 'Rejected'
     );
 
     return (
