@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 function CreateOrder() {
     const navigate = useNavigate();
     const [inventory, setInventory] = useState([]);
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [newOrder, setNewOrder] = useState({
         customerName: '',
         priority: 'Normal',
@@ -12,29 +14,50 @@ function CreateOrder() {
         qty: 1
     });
 
-    // We still need to fetch the inventory so the dropdown menu knows what equipment exists!
+    // Fetch inventory and customers for dropdowns
     useEffect(() => {
-        const fetchInventory = async () => {
+        const fetchData = async () => {
             try {
-                const res = await axios.get('http://localhost:5001/api/manager/inventory');
-                setInventory(res.data);
-                // Set the default dropdown value to the first item in the inventory
-                if (res.data.length > 0) {
-                    setNewOrder(prev => ({ ...prev, equipmentName: res.data[0].itemName }));
+                const [invRes, customerRes] = await Promise.all([
+                    axios.get('http://localhost:5001/api/manager/inventory'),
+                    axios.get('http://localhost:5001/api/manager/customers')
+                ]);
+
+                setInventory(invRes.data);
+                setCustomers(customerRes.data);
+
+                if (invRes.data.length > 0) {
+                    setNewOrder(prev => ({ ...prev, equipmentName: invRes.data[0].itemName }));
+                }
+
+                if (customerRes.data.length > 0) {
+                    const eligible = customerRes.data.find(c => c.status !== 'Pending') || customerRes.data[0];
+                    setSelectedCustomerId(eligible._id);
+                    setNewOrder(prev => ({ ...prev, customerName: eligible.fullName }));
                 }
             } catch (error) {
-                console.error("Error fetching inventory:", error);
+                console.error("Error fetching data:", error);
             }
         };
-        fetchInventory();
+        fetchData();
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault(); 
+        if (!newOrder.customerName || !newOrder.customerName.trim()) {
+            alert('Customer name is required (select or add a customer)');
+            return;
+        }
+
         try {
-            await axios.post('http://localhost:5001/api/manager/orders', newOrder);
+            const orderPayload = {
+                ...newOrder,
+                customerId: selectedCustomerId,
+                customerName: newOrder.customerName
+            };
+            await axios.post('http://localhost:5001/api/manager/orders', orderPayload);
             alert("➕ New Order Successfully Created!");
-            
+
         } catch (error) { 
             console.error("Error creating order:", error); 
         }
@@ -57,8 +80,18 @@ function CreateOrder() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#f9fbe7', padding: '30px', borderRadius: '8px', border: '1px solid #cddc39' }}>
                 
                 <div>
-                    <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Customer Name:</label>
-                    <input type="text" placeholder="e.g. Olanka Travels" required value={newOrder.customerName} onChange={(e) => setNewOrder({...newOrder, customerName: e.target.value})} style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Choose Registered Customer:</label>
+                    <select value={selectedCustomerId} onChange={(e) => {
+                        const selected = customers.find(c => c._id === e.target.value);
+                            setSelectedCustomerId(e.target.value);
+                        setNewOrder(prev => ({ ...prev, customerName: selected ? selected.fullName : '' }));
+                    }} style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc', marginBottom: '10px' }}>
+                        <option value="">-- Select existing customer --</option>
+                                {customers.filter(c => c.status !== 'Pending').map((customer) => (
+                            <option key={customer._id} value={customer._id}>{customer.fullName} ({customer.status})</option>
+                        ))}
+                    </select>
+
                 </div>
                 
                 <div>

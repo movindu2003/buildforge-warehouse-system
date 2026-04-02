@@ -19,6 +19,7 @@ import GatePass from './pages/GatePass';
 import StockMovementHistory from './pages/StockMovementHistory';
 import DamageReport from './pages/DamageReport';
 import StoreKeeperInventory from './pages/Inventory';
+import Customers from './pages/Customers';
 
 
 // 🧠 THE SMART LAYOUT: This decides whether to show the Sidebar or not
@@ -66,7 +67,10 @@ function Layout() {
 
           {/* Sales Officer routes */}
           {userRole === 'SalesOfficer' && (
-            <Route path="/create-order" element={<CreateOrder />} />
+            <>
+              <Route path="/create-order" element={<CreateOrder />} />
+              <Route path="/customers" element={<Customers />} />
+            </>
           )}
 
           {/* Warehouse Manager routes */}

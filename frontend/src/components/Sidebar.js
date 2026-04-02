@@ -19,6 +19,7 @@ function Sidebar() {
     
     if (role === 'SalesOfficer') {
         menuItems.push({ name: 'Create Order', path: '/create-order', icon: '➕' });
+        menuItems.push({ name: 'Customer Management', path: '/customers', icon: '👥' });
     }
     
     if (role === 'WarehouseManager') {

@@ -6,6 +6,7 @@ const twilio = require('twilio');
 // 🧠 Import your team's new MongoDB Models!
 const Equipment = require('../models/Equipment');
 const Order = require('../models/Order');
+const Customer = require('../models/Customer');
 
 // 📧 EMAIL SETUP
 const transporter = nodemailer.createTransport({
@@ -48,7 +49,52 @@ router.post('/inventory', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ========== 📜 ORDER ROUTES (Cloud Connected) ==========
+// ========== � CUSTOMER ROUTES (Sales Officer) ==========
+router.get('/customers', async (req, res) => {
+    try {
+        const customers = await Customer.find().sort({ createdAt: -1 });
+        res.json(customers);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/customers', async (req, res) => {
+    try {
+        const { fullName, shopName, contactNumber, address } = req.body;
+        if (!fullName || !fullName.trim()) return res.status(400).json({ error: 'Full Name is required' });
+        if (!shopName || !shopName.trim()) return res.status(400).json({ error: 'Shop Name is required' });
+        if (!contactNumber || !contactNumber.trim()) return res.status(400).json({ error: 'Contact Number is required' });
+        if (!address || !address.trim()) return res.status(400).json({ error: 'Address is required' });
+
+        const customer = new Customer({
+            fullName: fullName.trim(),
+            shopName: shopName.trim(),
+            contactNumber: contactNumber.trim(),
+            address: address.trim(),
+            status: 'Pending'
+        });
+        await customer.save();
+        res.status(201).json({ message: 'Customer created', customer });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/customers/:id', async (req, res) => {
+    try {
+        const { name, contact, status } = req.body;
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+        customer.fullName = fullName ? fullName.trim() : customer.fullName;
+        customer.shopName = shopName ? shopName.trim() : customer.shopName;
+        customer.contactNumber = contactNumber ? contactNumber.trim() : customer.contactNumber;
+        customer.address = address ? address.trim() : customer.address;
+        if (status && ['Pending','Active','Inactive'].includes(status)) customer.status = status;
+
+        await customer.save();
+        res.json({ message: 'Customer updated', customer });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ========== �📜 ORDER ROUTES (Cloud Connected) ==========
 router.get('/orders', async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 }); // Newest first
@@ -58,8 +104,12 @@ router.get('/orders', async (req, res) => {
 
 router.post('/orders', async (req, res) => {
     try {
+        const selectedCustomerName = req.body.customerName;
+        const selectedCustomerId = req.body.customerId || null;
+
         const newOrder = new Order({
-            customerName: req.body.customerName,
+            customerId: selectedCustomerId,
+            customerName: selectedCustomerName,
             priority: req.body.priority || 'Normal',
             status: 'Pending',
             itemsRequested: [{ 

@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const Equipment = require('./models/Equipment');
 const Order = require('./models/Order');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("Connected for Seeding"))
@@ -12,8 +14,18 @@ const seedDB = async () => {
         // 1. Clear old data
         await Equipment.deleteMany({});
         await Order.deleteMany({});
+        await User.deleteMany({});
 
-        // 2. Create Fake Equipment
+        // 2. Create Test Users
+        const hashedPassword = await bcrypt.hash('password', 10);
+        await User.insertMany([
+            { username: 'manager', password: hashedPassword, role: 'SalesManager' },
+            { username: 'officer', password: hashedPassword, role: 'SalesOfficer' },
+            { username: 'warehouse', password: hashedPassword, role: 'WarehouseManager' },
+            { username: 'keeper', password: hashedPassword, role: 'StoreKeeper' }
+        ]);
+
+        // 3. Create Fake Equipment
         const tools = await Equipment.insertMany([
             { itemName: "Concrete Mixer", availableQty: 5 },
             { itemName: "Scaffolding Set", availableQty: 20 },
@@ -21,7 +33,7 @@ const seedDB = async () => {
             { itemName: "Jackhammer", availableQty: 3 }
         ]);
 
-        // 3. Create Fake Pending Orders
+        // 4. Create Fake Pending Orders
         await Order.insertMany([
             {
                 customerName: "BuildIt Corp",
