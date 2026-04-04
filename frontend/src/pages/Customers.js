@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUserPlus, FaUsers, FaEdit } from 'react-icons/fa';
+import { FaUserPlus, FaUsers, FaEdit, FaTrash } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -36,7 +37,7 @@ function Customers() {
 
     const handleAddCustomer = async () => {
         if (!formData.fullName.trim() || !formData.shopName.trim() || !formData.contactNumber.trim() || !formData.address.trim()) {
-            alert('All fields are required for new customer');
+            toast.error('All fields are required for new customer');
             return;
         }
 
@@ -49,27 +50,47 @@ function Customers() {
             });
             setFormData({ fullName: '', shopName: '', contactNumber: '', address: '', status: 'Pending' });
             fetchCustomers();
-            alert('Customer added successfully as Pending');
+            toast.success('Customer added successfully');
         } catch (error) {
             console.error('Error adding customer:', error);
-            alert('Unable to add customer');
+            toast.error(error.response?.data?.error || 'Unable to add customer');
         }
     };
 
     const handleSave = async () => {
+        if (!editCustomer) {
+            toast.error('No customer selected to update');
+            return;
+        }
+
         if (!formData.fullName.trim()) {
-            alert('Customer name is required');
+            toast.error('Customer name is required');
             return;
         }
 
         try {
             await axios.put(`http://localhost:5001/api/manager/customers/${editCustomer._id}`, { ...formData });
             setEditCustomer(null);
-            setFormData({ name: '', contact: '', status: 'Pending' });
+            setFormData({ fullName: '', shopName: '', contactNumber: '', address: '', status: 'Pending' });
             fetchCustomers();
+            toast.success('Customer updated successfully');
         } catch (error) {
-            console.error('Error saving customer:', error);
-            alert('Unable to save customer');
+            console.error('Error saving customer:', error.response ? error.response.data : error.message);
+            toast.error(error.response?.data?.error || 'Unable to save customer');
+        }
+    };
+
+    const handleDelete = async (customerId) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this customer? This action cannot be undone.');
+        if (!confirmDelete) return;
+
+        try {
+            await axios.delete(`http://localhost:5001/api/manager/customers/${customerId}`);
+            fetchCustomers();
+            toast.success('Customer deleted successfully');
+        } catch (error) {
+            console.error('Error deleting customer:', error.response ? error.response.data : error.message);
+            toast.error(error.response?.data?.error || 'Unable to delete customer');
         }
     };
 
@@ -103,6 +124,9 @@ function Customers() {
                 >
                     Registered Customers
                 </Button>
+            </div>
+            <div style={{ marginBottom: '20px', color: '#616161' }}>
+                This view displays all customer records, including pending registrations.
             </div>
 
             {activeTab === 'register' && (
@@ -164,17 +188,34 @@ function Customers() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {customers.filter(customer => customer.status !== 'Pending').map(customer => (
+                                {customers.map(customer => (
                                     <tr key={customer._id} style={{ backgroundColor: '#fff' }}>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.fullName}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.shopName}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.contactNumber}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.address}</td>
-                                        <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.status}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px 10px',
+                                                borderRadius: '999px',
+                                                backgroundColor: customer.status === 'Active' ? '#dcedc8' : customer.status === 'Pending' ? '#fff9c4' : '#ffcdd2',
+                                                color: '#333',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {customer.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '12px', border: '1px solid #cddc39', display: 'flex', gap: '8px' }}>
                                             <Button onClick={() => handleEditClick(customer)} variant="warning" style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <FaEdit />
                                                 Edit
+                                            </Button>
+                                            <Button onClick={() => handleDelete(customer._id)} variant="danger" style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <FaTrash />
+                                                Delete
                                             </Button>
                                         </td>
                                     </tr>

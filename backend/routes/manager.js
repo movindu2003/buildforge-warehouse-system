@@ -52,14 +52,20 @@ router.post('/inventory', async (req, res) => {
 // ========== � CUSTOMER ROUTES (Sales Officer) ==========
 router.get('/customers', async (req, res) => {
     try {
+        console.log('[manager] GET /customers called');
         const customers = await Customer.find().sort({ createdAt: -1 });
+        console.log(`[manager] GET /customers returned ${customers.length} records`);
         res.json(customers);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error('[manager] GET /customers failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/customers', async (req, res) => {
     try {
-        const { fullName, shopName, contactNumber, address } = req.body;
+        console.log('[manager] POST /customers called with payload:', req.body);
+        const { fullName, shopName, contactNumber, address, status } = req.body;
         if (!fullName || !fullName.trim()) return res.status(400).json({ error: 'Full Name is required' });
         if (!shopName || !shopName.trim()) return res.status(400).json({ error: 'Shop Name is required' });
         if (!contactNumber || !contactNumber.trim()) return res.status(400).json({ error: 'Contact Number is required' });
@@ -70,16 +76,21 @@ router.post('/customers', async (req, res) => {
             shopName: shopName.trim(),
             contactNumber: contactNumber.trim(),
             address: address.trim(),
-            status: 'Pending'
+            status: status && ['Pending', 'Active', 'Inactive'].includes(status) ? status : 'Active'
         });
         await customer.save();
+        console.log('[manager] POST /customers succeeded:', customer._id);
         res.status(201).json({ message: 'Customer created', customer });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error('[manager] POST /customers failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.put('/customers/:id', async (req, res) => {
     try {
-        const { name, contact, status } = req.body;
+        console.log('[manager] PUT /customers/' + req.params.id + ' called with payload:', req.body);
+        const { fullName, shopName, contactNumber, address, status } = req.body;
         const customer = await Customer.findById(req.params.id);
         if (!customer) return res.status(404).json({ error: 'Customer not found' });
 
@@ -90,8 +101,12 @@ router.put('/customers/:id', async (req, res) => {
         if (status && ['Pending','Active','Inactive'].includes(status)) customer.status = status;
 
         await customer.save();
+        console.log('[manager] PUT /customers/' + req.params.id + ' succeeded');
         res.json({ message: 'Customer updated', customer });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error('[manager] PUT /customers/' + req.params.id + ' failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ========== �📜 ORDER ROUTES (Cloud Connected) ==========
@@ -104,6 +119,7 @@ router.get('/orders', async (req, res) => {
 
 router.post('/orders', async (req, res) => {
     try {
+        console.log('[manager] POST /orders called with payload:', req.body);
         const selectedCustomerName = req.body.customerName;
         const selectedCustomerId = req.body.customerId || null;
 
@@ -119,8 +135,12 @@ router.post('/orders', async (req, res) => {
             }]
         });
         await newOrder.save();
+        console.log('[manager] POST /orders succeeded:', newOrder._id);
         res.json({ message: "Order created successfully!", order: newOrder });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error('[manager] POST /orders failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ========== 🛑 CANCELLATION AUDIT TRAIL ==========

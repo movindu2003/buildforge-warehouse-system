@@ -35,7 +35,7 @@ function CreateOrder() {
                 }
 
                 if (customerRes.data.length > 0) {
-                    const eligible = customerRes.data.find(c => c.status !== 'Pending') || customerRes.data[0];
+                    const eligible = customerRes.data[0];
                     setSelectedCustomerId(eligible._id);
                     setNewOrder(prev => ({ ...prev, customerName: eligible.fullName }));
                 }
@@ -96,7 +96,7 @@ function CreateOrder() {
                         }}
                         options={[
                             { value: '', label: '-- Select existing customer --' },
-                            ...customers.filter(c => c.status !== 'Pending').map(customer => ({
+                            ...customers.map(customer => ({
                                 value: customer._id,
                                 label: `${customer.fullName} (${customer.status})`
                             }))

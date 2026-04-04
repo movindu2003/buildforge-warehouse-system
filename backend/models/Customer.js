@@ -5,7 +5,7 @@ const customerSchema = new mongoose.Schema({
     shopName: { type: String, required: true },
     contactNumber: { type: String, required: true },
     address: { type: String, required: true },
-    status: { type: String, enum: ['Pending', 'Active', 'Inactive'], default: 'Pending' }
+    status: { type: String, enum: ['Pending', 'Active', 'Inactive'], default: 'Active' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Customer', customerSchema);
