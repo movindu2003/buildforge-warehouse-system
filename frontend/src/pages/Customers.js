@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { FaUserPlus, FaUsers, FaEdit } from 'react-icons/fa';
+import FormField from '../components/FormField';
+import Button from '../components/Button';
+import Card from '../components/Card';
 
 function Customers() {
     const [customers, setCustomers] = useState([]);
@@ -73,61 +77,76 @@ function Customers() {
 
     return (
         <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', maxWidth: '1000px', margin: '0 auto' }}>
-            <h2 style={{ color: '#827717', marginBottom: '20px' }}>👥 Customer Management</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <FaUsers size={24} color="#827717" />
+                <h2 style={{ color: '#827717', margin: 0 }}>Customer Management</h2>
+            </div>
 
             <div style={{ marginBottom: '20px', display: 'flex', gap: '12px' }}>
-                <button onClick={() => setActiveTab('register')} style={{ padding: '10px 14px', borderRadius: '6px', border: activeTab === 'register' ? '2px solid #827717' : '1px solid #ccc', backgroundColor: activeTab === 'register' ? '#f0f4c3' : '#fff' }}>
+                <Button 
+                    onClick={() => setActiveTab('register')} 
+                    variant={activeTab === 'register' ? 'primary' : 'secondary'}
+                    style={{ 
+                        border: activeTab === 'register' ? '2px solid #827717' : '1px solid #ccc',
+                        backgroundColor: activeTab === 'register' ? '#f0f4c3' : undefined
+                    }}
+                >
                     Customer Registration
-                </button>
-                <button onClick={() => setActiveTab('list')} style={{ padding: '10px 14px', borderRadius: '6px', border: activeTab === 'list' ? '2px solid #827717' : '1px solid #ccc', backgroundColor: activeTab === 'list' ? '#f0f4c3' : '#fff' }}>
+                </Button>
+                <Button 
+                    onClick={() => setActiveTab('list')} 
+                    variant={activeTab === 'list' ? 'primary' : 'secondary'}
+                    style={{ 
+                        border: activeTab === 'list' ? '2px solid #827717' : '1px solid #ccc',
+                        backgroundColor: activeTab === 'list' ? '#f0f4c3' : undefined
+                    }}
+                >
                     Registered Customers
-                </button>
+                </Button>
             </div>
 
             {activeTab === 'register' && (
-                <div style={{ marginBottom: '30px', padding: '20px', borderRadius: '8px', border: '1px solid #cddc39', backgroundColor: '#fffde7' }}>
-                    <h3 style={{ marginBottom: '15px' }}>➕ Add New Customer (Pending)</h3>
+                <Card style={{ marginBottom: '30px' }}>
+                    <h3 style={{ marginBottom: '15px' }}>Add New Customer</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                        <div>
-                            <label style={{ fontWeight: 'bold', display: 'block' }}>Full Name</label>
-                            <input
-                                value={formData.fullName}
-                                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontWeight: 'bold', display: 'block' }}>Shop Name</label>
-                            <input
-                                value={formData.shopName}
-                                onChange={(e) => setFormData(prev => ({ ...prev, shopName: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontWeight: 'bold', display: 'block' }}>Contact Number</label>
-                            <input
-                                value={formData.contactNumber}
-                                onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontWeight: 'bold', display: 'block' }}>Address</label>
-                            <input
-                                value={formData.address}
-                                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
-                        </div>
+                        <FormField
+                            label="Full Name"
+                            type="text"
+                            value={formData.fullName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                            required
+                        />
+                        <FormField
+                            label="Shop Name"
+                            type="text"
+                            value={formData.shopName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, shopName: e.target.value }))}
+                            required
+                        />
+                        <FormField
+                            label="Contact Number"
+                            type="text"
+                            value={formData.contactNumber}
+                            onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
+                            required
+                        />
+                        <FormField
+                            label="Address"
+                            type="text"
+                            value={formData.address}
+                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                            required
+                        />
                     </div>
-                    <button
+                    <Button
                         onClick={handleAddCustomer}
-                        style={{ marginTop: '14px', backgroundColor: '#f9a825', color: 'white', padding: '10px 14px', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}
+                        variant="warning"
+                        style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                        ➕ Add Customer
-                    </button>
-                </div>
+                        <FaUserPlus />
+                        Add Customer
+                    </Button>
+                </Card>
             )}
 
             {activeTab === 'list' && (
@@ -153,9 +172,10 @@ function Customers() {
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.address}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>{customer.status}</td>
                                         <td style={{ padding: '12px', border: '1px solid #cddc39' }}>
-                                            <button onClick={() => handleEditClick(customer)} style={{ padding: '8px 12px', border: 'none', borderRadius: '4px', backgroundColor: '#ffb300', color: '#000', cursor: 'pointer' }}>
+                                            <Button onClick={() => handleEditClick(customer)} variant="warning" style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <FaEdit />
                                                 Edit
-                                            </button>
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -164,36 +184,51 @@ function Customers() {
                     </div>
 
                     {editCustomer && (
-                        <div style={{ marginTop: '20px', padding: '20px', borderRadius: '8px', border: '1px solid #cddc39', backgroundColor: '#fffde7' }}>
+                        <Card style={{ marginTop: '20px' }}>
                             <h3>Edit Customer: {editCustomer.fullName}</h3>
-                            <div style={{ marginBottom: '12px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block' }}>Full Name</label>
-                                <input type="text" value={formData.fullName} onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block' }}>Shop Name</label>
-                                <input type="text" value={formData.shopName} onChange={(e) => setFormData(prev => ({ ...prev, shopName: e.target.value }))} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block' }}>Contact Number</label>
-                                <input type="text" value={formData.contactNumber} onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block' }}>Address</label>
-                                <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block' }}>Status</label>
-                                <select value={formData.status} onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                </select>
-                            </div>
-                            <button onClick={handleSave} style={{ backgroundColor: '#8bc34a', color: '#fff', padding: '10px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                            <FormField
+                                label="Full Name"
+                                type="text"
+                                value={formData.fullName}
+                                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                                required
+                            />
+                            <FormField
+                                label="Shop Name"
+                                type="text"
+                                value={formData.shopName}
+                                onChange={(e) => setFormData(prev => ({ ...prev, shopName: e.target.value }))}
+                                required
+                            />
+                            <FormField
+                                label="Contact Number"
+                                type="text"
+                                value={formData.contactNumber}
+                                onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
+                                required
+                            />
+                            <FormField
+                                label="Address"
+                                type="text"
+                                value={formData.address}
+                                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                                required
+                            />
+                            <FormField
+                                label="Status"
+                                type="select"
+                                value={formData.status}
+                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                                options={[
+                                    { value: 'Pending', label: 'Pending' },
+                                    { value: 'Active', label: 'Active' },
+                                    { value: 'Inactive', label: 'Inactive' }
+                                ]}
+                            />
+                            <Button onClick={handleSave} variant="primary" style={{ marginTop: '10px' }}>
                                 Save Changes
-                            </button>
-                        </div>
+                            </Button>
+                        </Card>
                     )}
                 </>
             )}

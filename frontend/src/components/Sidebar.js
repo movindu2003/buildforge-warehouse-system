@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { FaClipboardList, FaUsers, FaWarehouse, FaBoxOpen, FaTachometerAlt, FaCogs, FaHistory } from 'react-icons/fa';
 
 function Sidebar() {
     const navigate = useNavigate();
@@ -13,30 +14,30 @@ function Sidebar() {
 
     // Add menu items based on the user's role
     if (role === 'SalesManager') {
-        menuItems.push({ name: 'Dashboard', path: '/approval-lobby', icon: '🏠' });
-        menuItems.push({ name: 'Settings', path: '/settings', icon: '⚙️' });
+        menuItems.push({ name: 'Dashboard', path: '/approval-lobby', icon: <FaTachometerAlt /> });
+        menuItems.push({ name: 'Settings', path: '/settings', icon: <FaCogs /> });
     } 
     
     if (role === 'SalesOfficer') {
-        menuItems.push({ name: 'Create Order', path: '/create-order', icon: '➕' });
-        menuItems.push({ name: 'Customer Management', path: '/customers', icon: '👥' });
+        menuItems.push({ name: 'Create Order', path: '/create-order', icon: <FaClipboardList /> });
+        menuItems.push({ name: 'Customer Management', path: '/customers', icon: <FaUsers /> });
     }
     
     if (role === 'WarehouseManager') {
-        menuItems.push({ name: 'Dispatch Center', path: '/dispatch', icon: '🚚' });
-        menuItems.push({ name: 'Pick List', path: '/picklist', icon: '📋' });
-        menuItems.push({ name: 'Gate Pass', path: '/gatepass', icon: '🚪' });
-        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: '📊' });
-        menuItems.push({ name: 'Damage Report', path: '/damage-report', icon: '⚠️' });
+        menuItems.push({ name: 'Dispatch Center', path: '/dispatch', icon: <FaWarehouse /> });
+        menuItems.push({ name: 'Pick List', path: '/picklist', icon: <FaBoxOpen /> });
+        menuItems.push({ name: 'Gate Pass', path: '/gatepass', icon: <FaWarehouse /> });
+        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: <FaBoxOpen /> });
+        menuItems.push({ name: 'Damage Report', path: '/damage-report', icon: <FaCogs /> });
     }
 
     if (role === 'StoreKeeper') {
-        menuItems.push({ name: 'Inventory Management', path: '/inventory', icon: '🏪' });
-        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: '📊' });
+        menuItems.push({ name: 'Inventory Management', path: '/inventory', icon: <FaBoxOpen /> });
+        menuItems.push({ name: 'Stock Movements', path: '/stock-movements', icon: <FaBoxOpen /> });
     }
 
     // common menu item for all roles
-    menuItems.push({ name: 'Order History', path: '/order-history', icon: '📜' });
+    menuItems.push({ name: 'Order History', path: '/order-history', icon: <FaHistory /> });
 
     return (
         <div style={{
