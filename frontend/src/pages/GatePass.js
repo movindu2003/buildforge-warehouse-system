@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
 
 function GatePass() {
@@ -10,6 +11,19 @@ function GatePass() {
     const [dispatchLocation, setDispatchLocation] = useState('');
     const [vehicleNumber, setVehicleNumber] = useState('');
     const [vehicleType, setVehicleType] = useState('');
+
+    const buildGatePassData = (order) => ({
+        gatePassNumber: order.gatePassNumber,
+        orderId: order._id,
+        customerName: order.customerName,
+        pickedBy: order.pickedBy,
+        driverName: order.driverName || 'N/A',
+        dispatchLocation: order.dispatchLocation || 'N/A',
+        vehicleNumber: order.vehicleNumber || 'N/A',
+        vehicleType: order.vehicleType || 'N/A',
+        generatedAt: order.generatedAt,
+        items: order.itemsRequested.map(item => ({ itemName: item.itemName, qty: item.pickedQty || item.qty }))
+    });
 
     const fetchReadyOrders = async () => {
         try {
@@ -65,33 +79,51 @@ function GatePass() {
     };
 
     const handleDownload = () => {
-        const content = `
-GATE PASS
-=====================================
-Gate Pass Number: ${gatePass.gatePassNumber}
-Order ID: ${gatePass.orderId}
-Customer: ${gatePass.customerName}
-Picked By: ${gatePass.pickedBy}
-Driver: ${gatePass.driverName || 'N/A'}
-Vehicle Number: ${gatePass.vehicleNumber || 'N/A'}
-Vehicle Type: ${gatePass.vehicleType || 'N/A'}
-Dispatch Location: ${gatePass.dispatchLocation || 'N/A'}
-Generated: ${new Date(gatePass.generatedAt).toLocaleString()}
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const margin = 40;
+        let y = 50;
 
-ITEMS:
-${gatePass.items.map(item => `${item.itemName} - Qty: ${item.qty}`).join('\n')}
+        doc.setFontSize(18);
+        doc.text('GATE PASS', 297.5, y, { align: 'center' });
+        y += 30;
+        doc.setFontSize(11);
 
-=====================================
-Authorized by Gate Keeper: _________________
-Date & Time: _________________
-        `;
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-        element.setAttribute('download', `gate-pass-${gatePass.gatePassNumber}.txt`);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        const lines = [
+            `Gate Pass Number: ${gatePass.gatePassNumber}`,
+            `Order ID: ${gatePass.orderId}`,
+            `Customer: ${gatePass.customerName}`,
+            `Picked By: ${gatePass.pickedBy || 'N/A'}`,
+            `Driver: ${gatePass.driverName || 'N/A'}`,
+            `Vehicle Number: ${gatePass.vehicleNumber || 'N/A'}`,
+            `Vehicle Type: ${gatePass.vehicleType || 'N/A'}`,
+            `Dispatch Location: ${gatePass.dispatchLocation || 'N/A'}`,
+            `Generated: ${new Date(gatePass.generatedAt).toLocaleString()}`
+        ];
+
+        lines.forEach(line => {
+            doc.text(line, margin, y);
+            y += 18;
+        });
+
+        y += 15;
+        doc.setFontSize(13);
+        doc.text('Items Released:', margin, y);
+        y += 20;
+        doc.setFontSize(11);
+
+        gatePass.items.forEach(item => {
+            doc.text(`${item.itemName} - Qty: ${item.qty}`, margin, y);
+            y += 16;
+        });
+
+        y += 25;
+        doc.setFontSize(11);
+        doc.text('Warehouse Manager: ____________________', margin, y);
+        doc.text('Gate Keeper: ____________________', 320, y);
+        y += 25;
+        doc.text('Authorized: ____________________', margin, y);
+
+        doc.save(`gate-pass-${gatePass.gatePassNumber}.pdf`);
     };
 
     return (
@@ -126,10 +158,17 @@ Date & Time: _________________
                                                 <td>{order.pickedBy || 'N/A'}</td>
                                                 <td>
                                                     <button
-                                                        onClick={() => setSelectedOrder(order)}
+                                                        onClick={() => {
+                                                            if (order.gatePassNumber) {
+                                                                setGatePass(buildGatePassData(order));
+                                                                setSelectedOrder(null);
+                                                            } else {
+                                                                setSelectedOrder(order);
+                                                            }
+                                                        }}
                                                         style={{ backgroundColor: '#9b59b6', color: 'white', padding: '8px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                                     >
-                                                        Add Gate Pass Details
+                                                        {order.gatePassNumber ? 'View Gate Pass' : 'Add Gate Pass Details'}
                                                     </button>
                                                 </td>
                                             </tr>

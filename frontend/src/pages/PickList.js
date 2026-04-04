@@ -12,8 +12,8 @@ function PickList() {
     const fetchApprovedOrders = async () => {
         try {
             const res = await axios.get('http://localhost:5001/api/manager/orders');
-            const approved = res.data.filter(o => o.status === 'Approved');
-            setOrders(approved);
+            const approvedOrPicking = res.data.filter(o => o.status === 'Approved' || o.status === 'Picking');
+            setOrders(approvedOrPicking);
         } catch (error) {
             console.error(error);
             toast.error("Failed to fetch orders");
@@ -63,6 +63,7 @@ function PickList() {
             );
             setSelectedOrder(res.data.order);
             setPickDetails(prev => ({ ...prev, [itemName]: 0 }));
+            fetchApprovedOrders();
             toast.success(`✅ ${pickedQty}x ${itemName} picked!`);
         } catch (error) {
             console.error(error);
@@ -77,13 +78,14 @@ function PickList() {
 
             {!pickList ? (
                 <div>
-                    <h3>Select an Approved Order</h3>
+                    <h3>Select an Approved or In-Progress Order</h3>
                     <table border="1" style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
                         <thead style={{ backgroundColor: '#3498db', color: 'white' }}>
                             <tr>
                                 <th>Customer</th>
                                 <th>Items</th>
                                 <th>Priority</th>
+                                <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -91,14 +93,15 @@ function PickList() {
                             {orders.map(order => (
                                 <tr key={order._id}>
                                     <td>{order.customerName}</td>
-                                    <td>{order.itemsRequested.map(i => `${i.qty}x ${i.itemName}`).join(', ')}</td>
+                                    <td>{order.itemsRequested.map(i => `${i.pickedQty || 0}/${i.qty} ${i.itemName}`).join(', ')}</td>
                                     <td>{order.priority}</td>
+                                    <td>{order.status}</td>
                                     <td>
                                         <button
                                             onClick={() => generatePickList(order._id)}
                                             style={{ backgroundColor: '#3498db', color: 'white', padding: '8px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                         >
-                                            Generate Pick List
+                                            {order.status === 'Picking' ? 'Continue Pick List' : 'Generate Pick List'}
                                         </button>
                                     </td>
                                 </tr>

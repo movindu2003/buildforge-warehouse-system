@@ -216,7 +216,19 @@ router.post('/orders/:id/generate-picklist', async (req, res) => {
         order.pickingStartedAt = new Date();
         await order.save();
         
-        res.json({ message: "Pick List generated successfully!", order });
+        const pickList = {
+            pickListId: 'PL-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+            orderId: order._id,
+            customerName: order.customerName,
+            items: order.itemsRequested.map(item => ({
+                itemName: item.itemName,
+                requiredQty: item.qty,
+                pickedQty: item.pickedQty || 0
+            })),
+            createdAt: new Date()
+        };
+
+        res.json({ message: "Pick List generated successfully!", order, pickList });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -254,6 +266,10 @@ router.post('/orders/:id/generate-gatepass', async (req, res) => {
     try {
         const { driverName, dispatchLocation, vehicleNumber, vehicleType } = req.body;
         const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        if (order.status !== 'Ready for Gate Pass') {
+            return res.status(400).json({ error: 'Order must be ready for gate pass before generating one' });
+        }
         
         order.gatePassNumber = 'GP-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         order.generatedAt = new Date();
@@ -263,13 +279,35 @@ router.post('/orders/:id/generate-gatepass', async (req, res) => {
         order.vehicleType = vehicleType;
 
         await order.save();
-        res.json({ message: "Gate Pass generated!", order });
+
+        const gatePass = {
+            gatePassNumber: order.gatePassNumber,
+            orderId: order._id,
+            customerName: order.customerName,
+            pickedBy: order.pickedBy,
+            driverName: order.driverName,
+            dispatchLocation: order.dispatchLocation,
+            vehicleNumber: order.vehicleNumber,
+            vehicleType: order.vehicleType,
+            generatedAt: order.generatedAt,
+            items: order.itemsRequested.map(item => ({
+                itemName: item.itemName,
+                qty: item.pickedQty || item.qty
+            }))
+        };
+
+        res.json({ message: "Gate Pass generated!", gatePass });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/orders/:id/dispatch', async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        if (order.status !== 'Ready for Gate Pass') {
+            return res.status(400).json({ error: 'Order must be Ready for Gate Pass before dispatching' });
+        }
+
         order.status = 'Dispatched';
 
         for (let requestedItem of order.itemsRequested) {
@@ -300,14 +338,15 @@ router.post('/orders/:id/damage-report', async (req, res) => {
     try {
         const { itemName, qty, reason, reportedBy } = req.body;
         const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
         
         const item = order.itemsRequested.find(i => i.itemName === itemName);
-        if (item) item.pickedQty -= qty;
+        if (!item) return res.status(404).json({ error: 'Item not found in order' });
+        item.pickedQty -= qty;
         
         order.damageReports.push({ itemName, qty, reason, reportedBy });
         order.stockMovements.push({ action: 'Damaged', itemName, qty, notes: reason });
         
-        // Return broken items to warehouse conceptually, or keep reserved depending on logic
         const inventoryItem = await Equipment.findOne({ itemName });
         if (inventoryItem) {
             inventoryItem.availableQty += qty;
@@ -317,6 +356,28 @@ router.post('/orders/:id/damage-report', async (req, res) => {
         
         await order.save();
         res.json({ message: "Damage report recorded!", order });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/orders/:id/stock-movements', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        res.json({ orderId: order._id, customerName: order.customerName, stockMovements: order.stockMovements, damageReports: order.damageReports });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/stock-movements', async (req, res) => {
+    try {
+        const orders = await Order.find();
+        const allMovements = orders.reduce((acc, order) => {
+            order.stockMovements.forEach(movement => {
+                acc.push({ orderId: order._id, customerName: order.customerName, ...movement.toObject ? movement.toObject() : movement });
+            });
+            return acc;
+        }, []);
+        allMovements.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        res.json(allMovements);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

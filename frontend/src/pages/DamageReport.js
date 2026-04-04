@@ -17,7 +17,7 @@ function DamageReport() {
             const activeOrders = res.data.filter(o => 
                 o.status === 'Picking' || 
                 o.status === 'Ready for Gate Pass' || 
-                o.status === 'Approved (Pending Dispatch)'
+                o.status === 'Approved'
             );
             setOrders(activeOrders);
         } catch (error) {
