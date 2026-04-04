@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { FaClipboardList, FaArrowLeft } from 'react-icons/fa';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
@@ -49,7 +50,7 @@ function CreateOrder() {
     const handleSubmit = async (e) => {
         e.preventDefault(); 
         if (!newOrder.customerName || !newOrder.customerName.trim()) {
-            alert('Customer name is required (select or add a customer)');
+            toast.error('Customer name is required (select or add a customer)');
             return;
         }
 
@@ -60,10 +61,10 @@ function CreateOrder() {
                 customerName: newOrder.customerName
             };
             await axios.post('http://localhost:5001/api/manager/orders', orderPayload);
-            alert("New Order Successfully Created!");
-
+            toast.success('New order successfully created!');
         } catch (error) { 
-            console.error("Error creating order:", error); 
+            console.error("Error creating order:", error);
+            toast.error(error.response?.data?.error || 'Unable to create order');
         }
     };
 

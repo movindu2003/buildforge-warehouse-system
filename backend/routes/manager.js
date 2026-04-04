@@ -109,6 +109,21 @@ router.put('/customers/:id', async (req, res) => {
     }
 });
 
+router.delete('/customers/:id', async (req, res) => {
+    try {
+        console.log('[manager] DELETE /customers/' + req.params.id + ' called');
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+        await customer.deleteOne();
+        console.log('[manager] DELETE /customers/' + req.params.id + ' succeeded');
+        res.json({ message: 'Customer deleted' });
+    } catch (err) {
+        console.error('[manager] DELETE /customers/' + req.params.id + ' failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ========== �📜 ORDER ROUTES (Cloud Connected) ==========
 router.get('/orders', async (req, res) => {
     try {
