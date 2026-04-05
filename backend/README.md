@@ -95,3 +95,36 @@ The system is designed to manage outbound warehouse operations efficiently, incl
 
 ---
 
+## 🧑‍💼 Sales Officer Enhancements
+
+This release includes a full Sales Officer workflow for customer registration, order creation, and history review.
+
+### Customer Management
+- Add new customers with required fields: **Full Name**, **Shop Name**, **Contact Number**, **Address**  
+- View all registered customers in a dedicated officer page  
+- Edit customer details with status control (**Active / Pending / Inactive**)  
+- Delete customer records directly from the officer UI  
+- Toast notifications confirm success or show errors for officer actions  
+
+### Order Creation
+- Select registered customers and available inventory when creating orders  
+- Orders save to the database with default status **Pending**  
+- Order creation page supports priority selection and quantity entry  
+- Toast notifications provide clear feedback for order submission  
+
+### Order History
+- Order history page now displays a complete order table  
+- Includes **Order ID**, **Customer**, **Priority**, **Items**, **Status**, and **Created At**  
+- Works for all users with shared backend order data  
+
+### Backend & Integration
+- `POST /api/manager/customers` for customer registration  
+- `PUT /api/manager/customers/:id` for customer updates  
+- `DELETE /api/manager/customers/:id` for customer removal  
+- `GET /api/manager/customers` for customer list  
+- `POST /api/manager/orders` for order creation  
+- `GET /api/manager/orders` for order history  
+- Added backend logging for success and error tracking in manager routes  
+
+---
+
